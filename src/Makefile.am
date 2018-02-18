@@ -9,6 +9,7 @@ AM_CXXFLAGS = @ASAN_CXXFLAGS@
 AM_CXXFLAGS += -std=gnu++14 -fpermissive -Wno-write-strings 
 AM_CXXFLAGS += -Wformat -Wformat-security
 AM_CXXFLAGS += -DDATADIR="\"$(datadir)\""
+AM_CXXFLAGS += @GUILELIB_CFLAGS@
 #AM_CXXFLAGS += -Wfatal-errors
 
 YFLAGS = -d
@@ -21,7 +22,7 @@ BUILT_SOURCES = getdate.cc getdate.hh parse.cc parse.hh posixtm.cc posixtm.hh
 CLEANFILES = $(BUILT_SOURCES)
 
 #neoleo_LDADD = -lm @CURSES_LIBS@ -lpanel $(ASAN_FLAGSL)  
-neoleo_LDADD = @ASAN_LIBS@ -lm @CURSES_LIBS@ -lpanel
+neoleo_LDADD = @ASAN_LIBS@ -lm @CURSES_LIBS@ -lpanel @GUILELIB_LIBS@
 
 neoleo_SOURCES = alt_cells.cc alt-parse.cc \
 		 args.cc basic.cc  busi.cc byte-compile.cc \

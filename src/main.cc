@@ -4,6 +4,8 @@
 #include <unistd.h>
 #include <vector>
 
+#include <libguile.h>
+
 #include "assert.h"
 //#include "atlast.h"
 //#include "atoleo.h"
@@ -122,6 +124,10 @@ main(int argc, char **argv)
 {
 	int ignore_init_file = 0;
 	int command_line_file = 0;	/* was there one? */
+
+	scm_init_guile();
+	scm_c_primitive_load("neoleo.scm");
+
 
 
 
