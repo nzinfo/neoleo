@@ -99,32 +99,52 @@ And do some clever compiling like so:
 		((_ s n)
 		 (set! s (string-drop s n)))))
 
+;;; remove the first char from string `remainder' and put it to end of `lexeme'
+(define-syntax take-char!
+  (syntax-rules ()
+		((_ lexeme remainder)
+		 (begin
+		   (string-append! lexeme (string-take remainder 1))
+		   (string-drop! remainder 1)))))
+
+;;; snarf a double-quotes string
+;;; TODO sort out case of unclosed quotes
+;;; TODO escaping the string (yikes!)
 (define (get-string s)
   (define result DQ)
   (string-drop! s 1)
   (let loop ()
     (unless (or (string-null? s) (dq0? s))
-      ;(write-ln s)
-      (string-append! result (string-take s 1))
-      (string-drop! s 1)
+      (take-char! result s)
       (loop)))
-  ;(format #t "string is ~s\n" result)
   (string-append result DQ))
 
-(define (alpha? s) 
+(define (char-type? pred s)
   (if (string-null? s)
     #f
-    (char-alphabetic? (car (string->list s 0 1)))))
+    (pred (car (string->list s 0 1)))))
+
+
+(define (alpha? s) (char-type? char-alphabetic? s))
+
+(define (numeric? s) (char-type? char-numeric? s))
 
 (define (parse-cell-or-func s)
   ;; TODO handle cell references
   (define result "")
   (let loop ()
     (when (alpha? s)
-      (set! result (string-append result(string-take s 1)))
-      (set! s (string-drop s 1))
+      (take-char! result s)
       (loop)))
     result)
+
+(define (parse-number s)
+  (define result "")
+  (let loop ()
+    (when (numeric? s)
+      (take-char! result s)
+      (loop)))
+  result)
 
 
 
@@ -133,6 +153,7 @@ And do some clever compiling like so:
   (define (c0? c) (equal? c0 c))
   (cond
     ((c0? "\"") (get-string str))
+    ((numeric? c0) (parse-number str)) ; TODO fix this, as not all numbers start with digit
     ((alpha? c0) (parse-cell-or-func str))
     (#t 'parse-error)))
 
@@ -163,4 +184,4 @@ And do some clever compiling like so:
 
 (parse-test " \"hellow world\" \"another string\"")
 (parse-test " hellow ")
-
+(parse-test "2345 hello")
