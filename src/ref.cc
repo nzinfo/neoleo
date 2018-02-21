@@ -51,6 +51,7 @@
 #include "ref.h"
 #include "cmd.h"
 #include "lists.h"
+#include "beguile.h"
 
 using std::cout;
 using std::endl;
@@ -155,9 +156,14 @@ new_value (CELLREF row, CELLREF col, const char *string)
 		return (char *) "cell is locked";
 	}
 
+
+	
+	set_guile_cell_formula(string, row, col); 
+
 	set_cell (row, col, string);
 	if (my_cell)
 	{
+
 		update_cell (my_cell);
 		if (is_constant (my_cell->get_cell_formula()))
 		{

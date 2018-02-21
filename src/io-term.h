@@ -25,6 +25,7 @@
 #include "global.h"
 //#include "defuns.h"
 
+extern bool option_guile;
 extern bool using_x;
 extern bool using_curses;
 extern bool user_wants_headless;

@@ -71,6 +71,8 @@ class value {
 	unsigned int	cell_format:	4;	/* Was 3 */
 	unsigned int	cell_precision:	4;
     }; 
+		
+
 class cell
 {
 	private:
@@ -93,7 +95,7 @@ class cell
 		struct ref_to *cell_refs_to = nullptr;
 
 		unsigned char * get_cell_formula() { return cell_formula; } ; 
-		unsigned char * set_cell_formula( unsigned char * newval) { cell_formula = newval ;  return cell_formula; } ; 
+		unsigned char * set_cell_formula( unsigned char * newval);
 
 
 		void sInt(int newval); // set integer value
@@ -120,6 +122,7 @@ class cell
 		//void set_cell_bol(int newval) { c_z.c_i = newval;};
 		vals get_c_z() { return c_z; }; // ugly compilation hack. TODO eliminate
 		void set_c_z(vals newval) { c_z = newval; } ; // TODO more ugly hackery
+		int guile_id; // a reference number that guile should use for the cell
 };
 
 bool vacuous(cell* cp);

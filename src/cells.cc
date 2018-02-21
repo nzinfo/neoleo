@@ -40,6 +40,7 @@
 #include <string>
 
 #include "global.h"
+#include "beguile.h"
 #include "cell.h"
 #include "eval.h"
 #include "errors.h"
@@ -68,6 +69,8 @@ using std::cout;
 	return;		\
  }
 
+
+static int guile_id_counter = 0; // an incrementing cell reference number
 
 value::value(void)
 {
@@ -100,6 +103,13 @@ cell::sInt(int newval)
 	set_cell_type(TYP_INT);
 }
 
+unsigned char * 
+cell::set_cell_formula( unsigned char * newval)
+{ 
+	cell_formula = newval ;  
+	return cell_formula; 
+}
+
 bool 
 vacuous(cell* cp)
 {
@@ -116,6 +126,7 @@ get_cell_formula_at(int r, int c)
 	return res;
 }
 
+		
 
 static int
 cell_mc ( long row, long col, char *dowhat, struct value *p)

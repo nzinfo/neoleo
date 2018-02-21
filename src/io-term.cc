@@ -146,11 +146,14 @@ static char	option_separator = '\t';
 static char	*option_format = NULL;
 int		option_filter = 0;
 
+static bool	option_guile = false;
+
 bool get_option_tests() { return option_tests;}
 
-static char short_options[] = "4:VqfxHhsFSTv";
+static char short_options[] = "4:gVqfxHhsFSTv";
 static struct option long_options[] =
 {
+	{"guile",		0,	NULL,	'g'},
 	{"version",		0,	NULL,	'V'},
 	{"quiet",		0,	NULL,	'q'},
 	{"ignore-init-file",	0,	NULL,	'f'},
@@ -810,6 +813,7 @@ Usage: %s [OPTION]... [FILE]...\n\
 "), PACKAGE);
   printf(_("\
 \n\
+  -g, --guile              run with guile (experimental)\n\
   -H, --headless           run without all toolkits\n\
   -h, --help               display this help and exit\n\
   -V, --version            output version information and exit\n\
@@ -1034,6 +1038,9 @@ parse_command_line(int argc, char **argv, volatile int *ignore_init_file)
 
 		switch (opt)
 		{
+			case 'g':
+				option_guile = true;
+				break;
 			case 'v':
 			case 'V':
 				print_version();

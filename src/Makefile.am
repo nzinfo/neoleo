@@ -24,8 +24,8 @@ CLEANFILES = $(BUILT_SOURCES)
 #neoleo_LDADD = -lm @CURSES_LIBS@ -lpanel $(ASAN_FLAGSL)  
 neoleo_LDADD = @ASAN_LIBS@ -lm @CURSES_LIBS@ -lpanel @GUILELIB_LIBS@
 
-neoleo_SOURCES = alt_cells.cc alt-parse.cc \
-		 args.cc basic.cc  busi.cc byte-compile.cc \
+neoleo_SOURCES = alt_cells.cc alt-parse.cc args.cc \
+		 basic.cc  beguile.cc busi.cc byte-compile.cc \
                  cells.cc cmd.cc \
 		 date.cc decompile.cc display.cc \
 		 eval.cc format.cc forminfo.cc funcs.cc \

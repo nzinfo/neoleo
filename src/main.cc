@@ -4,12 +4,9 @@
 #include <unistd.h>
 #include <vector>
 
-#include <libguile.h>
-
 #include "assert.h"
-//#include "atlast.h"
-//#include "atoleo.h"
 #include "basic.h"
+#include "beguile.h"
 #include "cmd.h"
 #include "defuns.h"
 #include "init.h"
@@ -18,9 +15,6 @@
 #include "io-utils.h"
 #include "mdi.h"
 #include "tests.h"
-//#include "graph.h"
-//#include "mysql.h"
-//#include "print.h"
 #include "logging.h"
 #include "utils.h"
 #include "io-headless.h"
@@ -125,12 +119,6 @@ main(int argc, char **argv)
 	int ignore_init_file = 0;
 	int command_line_file = 0;	/* was there one? */
 
-	scm_init_guile();
-	scm_c_primitive_load("neoleo.scm");
-	SCM func = scm_variable_ref(scm_c_lookup("guile-hi"));
-	scm_call_0(func);
-
-
 
 
 	init_native_language_support();
@@ -141,6 +129,9 @@ main(int argc, char **argv)
 	parse_command_line(argc, argv, &ignore_init_file);
 	init_basics();
 	headless_graphics(); // fallback position
+
+	beguile bg;
+	if(option_guile) bg.init();
 
 	if(get_option_tests()) {
 		bool all_pass = headless_tests();
