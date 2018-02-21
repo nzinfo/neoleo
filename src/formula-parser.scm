@@ -1,10 +1,15 @@
-(use-modules (ice-9 peg string-peg))
-(use-modules (ice-9 peg using-parsers))
+;;(use-modules (ice-9 peg string-peg))
+;;(use-modules (ice-9 peg using-parsers))
 (use-modules (ice-9 pretty-print))
 (use-modules (ice-9 format))
+(use-modules (oop goops))
+(use-modules (ice-9 i18n))
 
 
 #!
+
+
+
 We should be able to parse
 (3625/10625 * 24999.76)
 (ceil(2626.77+2999.0)
@@ -12,68 +17,53 @@ rc[-1]-rc[-2]
 if(rc[-2]<0, -rc[-2], "")
 
 And do some clever compiling like so:
+http://lists.gnu.org/archive/html/guile-user/2018-02/msg00006.html
 (define foo (compile '(lambda (x) (+ x 13))))
 (define h (make-hash-table))
 (hash-set! h 1 2)
 (h-ref h 1)
 !#
 
-
-
-
-
-(define-peg-pattern dq body "\"") ; double-quote. Easier to define it separately
-(define-peg-string-patterns
-  "string-pattern <-- dq string-rest dq
-  string-rest <- (! dq .)*")
-
-
-(define-peg-string-patterns
-  "expr <- function/string-pattern/expr-r/num
-  function <-- function-name '(' expr ')'
-  function-name <-- [a-z]+
-  expr-r <-- num op num
-  op <-- '+' / '-' / '*' / '/'
-  W <-- [ \t\n]
-  num <-- [0-9]+ ('.' [0-9]+)?
-  ")
-
-(define (parse pat str)
-  (peg:tree (match-pattern pat str)))
-
-(define first car)
-(define rest cdr)
-(define empty? null?)
-(define null '())
-
-(define (flatten l)
-  (cond 
-    ((empty? l)      null)
-    ((not (list? l)) (list l))
-    (else            (append (flatten (first l)) (flatten (rest l))))))
-
-(define unparse flatten)
-
-
-(define (show pat str)
-  (define tree (parse pat str))
-  (format #t "\nParsing: ~s\n" str)
-  (pretty-print tree)
-  (format #t "\nUnparsing:\n")
-  (pretty-print (unparse tree))
-  #t)
-
-#!
-(show formula "hello(12)")
-(show formula "42.42")
-(show formula "hello(\"world\")")
-(show formula "32+34.45")
-(show string-pattern "\"this is a String\"")
-!#
-
 ;;; --- oh hell, it might just be easier to hand-roll everyhting
 
-(format #t "\n\nNow just doing it my own way\n")
+(define-class <parser-buffer> (<object>)
+	      (accepted-lexemes #:init-value '()) ; the completed lexemes
+	      (lexeme #:init-value "" #:setter pb-lexeme!) ; the lexeme currently being built
+	      (unprocessed #:init-keyword #:unprocessed #:getter pb-unprocessed))
+
+(define-method (eat-white (pb <parser-buffer>))
+	       (slot-set!  pb 'unprocessed (string-trim (pb-unprocessed pb) char-set:whitespace))
+	       pb)
+
+(define-generic peek)
+
+(define-method (peek (pb <parser-buffer>))
+	       (define s (slot-ref pb 'unprocessed))
+	       (if (string-null? s)
+		 'eof
+		 (string-ref s 0)))
+
+(define (accept-lexeme pb)
+  (slot-set! pb 'accepted-lexemes (append (slot-ref pb 'accepted-lexemes) (list (slot-ref pb 'lexeme))))
+  (slot-set! pb 'lexeme "")
+  pb)
+  
+(define-method (finished? (pb <parser-buffer>))
+	       (string-null? (slot-ref pb 'unprocessed)))
+
+(define (eat-chars pb n)
+	       (slot-set! pb 'unprocessed (string-drop (slot-ref pb 'unprocessed) n)))
+
+(define (eat-char pb) (eat-chars pb 1))
+
+(define (make-pb str)
+    (make <parser-buffer> #:unprocessed str))
+
+
+(define (describe-pb pb)
+  (define (f el) (list el (slot-ref pb el)))
+  (write (map f '(accepted-lexemes lexeme unprocessed)))
+  (newline))
 
 (define (char0 s)
   (if (string-null? s)
@@ -107,17 +97,6 @@ And do some clever compiling like so:
 		   (string-append! lexeme (string-take remainder 1))
 		   (string-drop! remainder 1)))))
 
-;;; snarf a double-quotes string
-;;; TODO sort out case of unclosed quotes
-;;; TODO escaping the string (yikes!)
-(define (get-string s)
-  (define result DQ)
-  (string-drop! s 1)
-  (let loop ()
-    (unless (or (string-null? s) (dq0? s))
-      (take-char! result s)
-      (loop)))
-  (string-append result DQ))
 
 (define (char-type? pred s)
   (if (string-null? s)
@@ -129,59 +108,79 @@ And do some clever compiling like so:
 
 (define (numeric? s) (char-type? char-numeric? s))
 
-(define (parse-cell-or-func s)
-  ;; TODO handle cell references
-  (define result "")
-  (let loop ()
-    (when (alpha? s)
-      (take-char! result s)
-      (loop)))
-    result)
 
-(define (parse-number s)
-  (define result "")
-  (let loop ()
-    (when (numeric? s)
-      (take-char! result s)
-      (loop)))
-  result)
+
+(define (take-char pb)
+  (define s (slot-ref pb 'unprocessed))
+  (slot-set! pb 'lexeme (string-append (slot-ref pb 'lexeme) (string (peek pb))))
+  (eat-char pb))
 
 
 
-(define (inner-bfp str)
-  (define c0 (string-take str 1))
-  (define (c0? c) (equal? c0 c))
+(define (snarfing pb pred)
+    (define c0 (peek pb))
+    (when (char? c0)
+      (when (pred c0)
+	(take-char pb)
+	(snarfing pb pred))))
+
+(define (not-dq? c) (not (eq? c #\")))
+
+(define-generic parse-string)
+
+(define-method (parse-string (pb <parser-buffer>))
+  (take-char pb) ; the double-quote
+  (snarfing pb not-dq?)
+  (take-char pb) ; the end-quote
+  (accept-lexeme pb) 
+  pb)
+
+(define-method (parse-string (str <string>))
+	       (parse-string (make-pb str)))
+
+(define (more? pb) (not (finished? pb)))
+
+(define (try-numeric pb)
+  (define-values (num nread)  (locale-string->inexact (pb-unprocessed pb)))
+  (when (positive? nread)
+    (pb-lexeme! pb num)
+    (accept-lexeme pb)
+    (eat-chars pb nread))
+  (positive? nread))
+
+(define (parse-word-or-ref pb)
+  (snarfing pb char-alphabetic?) ; TODO handle case of cell ref
+  (accept-lexeme pb))
+
+(define (get-lexeme pb)
+  (define c0 (peek pb))
   (cond
-    ((c0? "\"") (get-string str))
-    ((numeric? c0) (parse-number str)) ; TODO fix this, as not all numbers start with digit
-    ((alpha? c0) (parse-cell-or-func str))
-    (#t 'parse-error)))
+    ((try-numeric pb))
+    ((eq? c0 #\") (parse-string pb))
+    ((char-alphabetic? c0) (parse-word-or-ref pb))
+    (#t (eat-char pb))) ; TODO should probably raise a parse error
+  #t)
 
 ;;; big flipping parser
 (define (bfp str)
-  (define result '())
-  (define match "")
-  (let loop ()
-    (set! str (string-trim str char-set:whitespace))
-    (unless (string-null? str)
-      (set! match (inner-bfp str))
-      (if (eq? match 'parse-error)
-	(set! result 'parse-error)
-	(begin
-	  (set! result (cons match result))
-	  (set! str (string-drop str (string-length match)))
-	  (loop)))))
+  (define pb (make-pb str))
+  (while (more? (eat-white pb))
+	 (get-lexeme pb))
+  pb)
 
-  (if (list? result)
-    (reverse result)
-    result))
+
 
 
 (define (parse-test str) 
+  (define pb (bfp str))
+  ;;(write (slot-ref pb 'lexeme))
   (format #t "\nParsing ~s\n" str)
-  (format #t "~s\n" (bfp str))
+  (format #t "Result: ~s\n" (describe-pb pb))
   (format #t "Finished parsing\n"))
 
-(parse-test " \"hellow world\" \"another string\"")
-(parse-test " hellow ")
-(parse-test "2345 hello")
+(define (run)
+  (parse-test " \"hellow world\" \"another string\"")
+  (parse-test " hellow ")
+  (parse-test "2345 hello")
+  (parse-test "-23+24")
+  #t)

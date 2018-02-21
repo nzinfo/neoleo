@@ -127,6 +127,8 @@ main(int argc, char **argv)
 
 	scm_init_guile();
 	scm_c_primitive_load("neoleo.scm");
+	SCM func = scm_variable_ref(scm_c_lookup("guile-hi"));
+	scm_call_0(func);
 
 
 
