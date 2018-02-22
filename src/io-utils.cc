@@ -21,7 +21,7 @@
  */
 
 #include <stdlib.h>
-//#include <string>
+#include <string>
 #include <iomanip>
 #include <locale>
 #include <sstream>
@@ -299,8 +299,9 @@ long_to_str (long val)
 /* create the human-readable version of the contents of a cell
    This scribbles on print-buf bigtime */
 
-char *
-print_cell (CELL * cp)
+
+static char *
+print_cell_c(CELL * cp)
 {
   int j;
   int p;
@@ -496,6 +497,20 @@ print_cell (CELL * cp)
 #endif
   return 0;
 }
+
+std::string print_cell(cell* cp)
+{
+	return print_cell_c(cp);
+}
+
+std::string print_cell(int row, int col)
+{
+	std::string result{""};
+	cell* cp = find_cell(row, col);
+	if(cp) result = print_cell(cp);
+	return result;
+}
+
 
 /* Return the value of ROW,COL in a human-readable fashion
  * In particular, strings are \\ed, and if add_quote is true,

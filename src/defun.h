@@ -828,17 +828,6 @@ DEFUN ("clear-spreadsheet",
 "Erase all cells, reset all column widths and row heights.",
 #endif
 
-/* Sorting Commands */
-
-DEFUN ("sort-region", FDsort_region_cmd, FAsort_region_cmd,
-        to_vptr(sort_region_cmd))
-#ifdef FUNC_ARG_STRINGS
-"SSort region? ",
-#endif
-#ifdef DOC_STRINGS
-"Sort a row or column of cells.",
-#endif
-
 /* Commands For Setting Cell Attributes. */
 
 DEFUN_5 ("set-region-height", FDset_region_height, FAset_region_height,

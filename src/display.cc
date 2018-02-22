@@ -92,6 +92,7 @@ pr_display_cell (struct display *disp, CELLREF r, CELLREF c, CELL *cp)
   xx_IntRectangle ir;
   struct font_memo * new_font = 0;
   char * new_unclipped = 0;
+  std::string new_unclipped_str;
   int new_type = 0;
   int new_jst = 0;
 
@@ -102,7 +103,8 @@ pr_display_cell (struct display *disp, CELLREF r, CELLREF c, CELL *cp)
   if (cp && disp->widths[c - disp->range.lc]
       && disp->heights[r - disp->range.lr])
     {
-      new_unclipped = print_cell (cp);
+	    new_unclipped_str = print_cell(cp);
+      new_unclipped = new_unclipped_str.c_str();
       if (!new_unclipped || *new_unclipped == '\0')
 	new_unclipped = 0;
       else
