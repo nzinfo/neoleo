@@ -146,7 +146,7 @@ static char	option_separator = '\t';
 static char	*option_format = NULL;
 int		option_filter = 0;
 
-static bool	option_guile = false;
+bool	option_guile = false;
 
 bool get_option_tests() { return option_tests;}
 

@@ -5,5 +5,14 @@
   (display "hello from guile")
   (newline))
 
+(define *cell-formulae* (make-hash-table))
+
+(define (cell-id row col)
+  (+  col (* 1000 row)))
+
 (define (set-cell-formula formula row col)
-  (format #t "TODO:set-cell-formula:~s:~s:~s\n" formula row col))
+  (hash-set! *cell-formulae* (cell-id row col) formula))
+
+(define (get-cell-formula row col)
+  (hash-ref *cell-formulae* (cell-id row col)))
+

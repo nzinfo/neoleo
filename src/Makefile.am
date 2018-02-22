@@ -24,12 +24,12 @@ CLEANFILES = $(BUILT_SOURCES)
 #neoleo_LDADD = -lm @CURSES_LIBS@ -lpanel $(ASAN_FLAGSL)  
 neoleo_LDADD = @ASAN_LIBS@ -lm @CURSES_LIBS@ -lpanel @GUILELIB_LIBS@
 
-neoleo_SOURCES = alt_cells.cc alt-parse.cc args.cc \
+neoleo_SOURCES = args.cc \
 		 basic.cc  beguile.cc busi.cc byte-compile.cc \
                  cells.cc cmd.cc \
 		 date.cc decompile.cc display.cc \
 		 eval.cc format.cc forminfo.cc funcs.cc \
-		 gsl.cc hash.cc help.cc \
+		 hash.cc help.cc \
 		 info.cc init.cc input.cc \
 		 io-headless.cc io-curses.cc io-edit.cc io-term.cc \
 		 io-utils.cc io-visual.cc \
@@ -56,11 +56,10 @@ neoleo_SOURCES = alt_cells.cc alt-parse.cc args.cc \
 # Ideally obstack would be removed as a dependency anyway
 #neoleo_SOURCES += obstack_a.cc
 
-noinst_HEADERS = alt_cells.h alt-parse.h \
-		 args.h basic.h byte-compile.h busi.h cell.h \
+noinst_HEADERS = args.h basic.h byte-compile.h busi.h cell.h \
 		 cmd.h date.h decompile.h defun.h defuns.h display.h \
 		 errors.h eval.h format.h forminfo.h funcdef.h \
-		 funcs.h global.h gsl.h hash.h help.h info.h init.h \
+		 funcs.h global.h hash.h help.h info.h init.h \
 		 input.h io-abstract.h io-headless.h io-curses.h io-edit.h \
 		 io-generic.h io-term.h io-utils.h io-visual.h \
 		 ir.h key.h \

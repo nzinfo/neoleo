@@ -14,6 +14,7 @@
 
 
 #include "basic.h"
+#include "beguile.h"
 #include "cell.h"
 #include "io-abstract.h"
 #include "io-headless.h"
@@ -266,9 +267,10 @@ insert_rowwise(T fildes)
 
 static void type_cell(int fildes)
 {
-	//cout << "101 OK value appears on next line\n" 
-	cout	<< print_cell(find_cell(curow, cucol))
-		<< "\n";
+	string s = using_guile()? get_guile_cell_formula(curow, cucol) : 
+		print_cell(find_cell(curow, cucol));
+
+	cout	<<  s	<< "\n";
 }
 
 
