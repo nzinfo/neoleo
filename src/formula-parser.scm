@@ -5,6 +5,22 @@
 (use-modules (oop goops))
 (use-modules (ice-9 i18n))
 
+(define LRB "(")
+(define RRB ")")
+
+;; don't throw toys out of pram if we can't do it
+(define-syntax no-except
+  (syntax-rules ()
+		((_ proc els)
+		 (catch #t
+			(lambda () (proc els))
+			(lambda (key . params) 'oops)))))
+
+(define (nex-car els) (no-except car els))
+(define (nex-cadr els) (no-except cadr els))
+(define (nex-caddr els) (no-except caddr els))
+(define (nex-cddr els) (no-except cddr els))
+
 
 #!
 
@@ -27,7 +43,7 @@ http://lists.gnu.org/archive/html/guile-user/2018-02/msg00006.html
 ;;; --- oh hell, it might just be easier to hand-roll everyhting
 
 (define-class <parser-buffer> (<object>)
-	      (accepted-lexemes #:init-value '()) ; the completed lexemes
+	      (accepted-lexemes #:init-value '() #:getter pb-lexemes) ; the completed lexemes
 	      (lexeme #:init-value "" #:setter pb-lexeme!) ; the lexeme currently being built
 	      (unprocessed #:init-keyword #:unprocessed #:getter pb-unprocessed))
 
@@ -81,8 +97,8 @@ http://lists.gnu.org/archive/html/guile-user/2018-02/msg00006.html
 	
 (define-syntax string-append!
   (syntax-rules ()
-		((_ s n)
-		 (set! s (string-append s n)))))
+		((_ s arg1 ... )
+		 (set! s (string-append s arg1 ...)))))
 
 (define-syntax string-drop!
   (syntax-rules ()
@@ -155,6 +171,7 @@ http://lists.gnu.org/archive/html/guile-user/2018-02/msg00006.html
 (define (get-lexeme pb)
   (define c0 (peek pb))
   (cond
+    ((eq? c0 #\+) (take-char pb) (accept-lexeme pb)) 
     ((try-numeric pb))
     ((eq? c0 #\") (parse-string pb))
     ((char-alphabetic? c0) (parse-word-or-ref pb))
@@ -184,3 +201,34 @@ http://lists.gnu.org/archive/html/guile-user/2018-02/msg00006.html
   (parse-test "2345 hello")
   (parse-test "-23+24")
   #t)
+
+
+
+
+(define (expr tokens) 'defined-below)
+
+(define (bin-op op token rest)
+       (string-concatenate (list LRB op " " token  " " (expr rest) RRB)))
+
+(define (expr tokens)
+  (define curr-token (nex-car tokens))
+  (define next-token (nex-cadr tokens))
+  (cond 
+    ((number? curr-token)
+     (if (equal? "+" next-token)
+       (bin-op "+" (number->string curr-token) (nex-cddr tokens))
+       (number->string curr-token)))
+    (#t "#PARSE")))
+
+
+
+(define (guile-parse str)
+  (define tokens (pb-lexemes (bfp str)))
+  (define tree (string-append LRB "lambda () "))
+  (string-append tree (expr tokens) RRB))
+
+	
+
+
+(define (run1)
+  (guile-parse "23+24"))

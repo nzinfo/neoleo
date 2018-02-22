@@ -39,6 +39,7 @@
 #include <vector>
 #include "utils.h"
 #include "decompile.h"
+#include "beguile.h"
 
 using std::cout;
 using std::endl;
@@ -965,7 +966,7 @@ _io_pr_cell_win (struct window *win, CELLREF r, CELLREF c, CELL *cp)
   
   getyx (stdscr, yy, xx);
   glowing = (r == curow && c == cucol && win == cwin);
-  std::string ptr_str = print_cell(cp);
+  std::string ptr_str = using_guile()? get_guile_cell_formula(r, c) : print_cell(cp);
   ptr = ptr_str.c_str();
   move_cursor_to (win, r, c, 0);
   if (glowing)
