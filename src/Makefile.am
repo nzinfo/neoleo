@@ -67,7 +67,7 @@ noinst_HEADERS = args.h basic.h byte-compile.h busi.h cell.h \
 		 mdi.h mem.h \
 		 node.h  numeric.h \
 		 obstack.h \
-		 oleofile.h oleo_plot.h oleosql.h oleox.hpp oleo_xb.h \
+		 oleofile.h   oleox.hpp  \
 		 parse.hh parse_parse.h \
 		 posixtm.hh proto.h ref.h \
 		 regions.h sort.h stringo.h stub.h stubs.h \

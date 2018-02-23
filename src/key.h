@@ -1,8 +1,4 @@
 #pragma once
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 
 
 //#ifndef KEYH
@@ -79,9 +75,3 @@ extern int map_id(const char *name);
 extern void create_keymap (const char * mapname, char * parentname);
 extern void set_map_prompt (char * map, char * str);
 
-#ifdef __cplusplus
-}
-#endif
-
-
-//#endif  /* KEYH */

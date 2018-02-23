@@ -33,7 +33,7 @@ struct line
 
 extern void set_line (struct line *line, const char *string);
 extern void setn_line (struct line *line, const char *string, int n);
-extern void catn_line (struct line *line, const char *string, int n);
+void catn_line (struct line *line, const char *string, int n);
 extern void sprint_line (struct line *line, const char * fmt, ...);
 void splicen_line(struct line * line, const char * str, int n, int pos);
 extern void edit_line (struct line * line, int begin, int len);

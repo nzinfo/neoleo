@@ -5,8 +5,8 @@
 (use-modules (oop goops))
 (use-modules (ice-9 i18n))
 
-(define LRB "(")
-(define RRB ")")
+(define LRB #\()
+(define RRB #\))
 
 ;; don't throw toys out of pram if we can't do it
 (define-syntax no-except
@@ -168,14 +168,18 @@ http://lists.gnu.org/archive/html/guile-user/2018-02/msg00006.html
   (snarfing pb char-alphabetic?) ; TODO handle case of cell ref
   (accept-lexeme pb))
 
+(define (accept-char pb)
+  (take-char pb)
+  (accept-lexeme pb))
+
 (define (get-lexeme pb)
   (define c0 (peek pb))
   (cond
-    ((eq? c0 #\+) (take-char pb) (accept-lexeme pb)) 
+    ((memq c0 (list #\+ #\-)) (accept-char pb))
     ((try-numeric pb))
     ((eq? c0 #\") (parse-string pb))
     ((char-alphabetic? c0) (parse-word-or-ref pb))
-    (#t (eat-char pb))) ; TODO should probably raise a parse error
+    (#t (accept-char pb)))
   #t)
 
 ;;; big flipping parser
@@ -207,8 +211,9 @@ http://lists.gnu.org/archive/html/guile-user/2018-02/msg00006.html
 
 (define (expr tokens) 'defined-below)
 
+
 (define (bin-op op token rest)
-       (string-concatenate (list LRB op " " token  " " (expr rest) RRB)))
+       (list op token  (expr rest)))
 
 (define (expr tokens)
   (define curr-token (nex-car tokens))
@@ -216,16 +221,19 @@ http://lists.gnu.org/archive/html/guile-user/2018-02/msg00006.html
   (cond 
     ((number? curr-token)
      (if (equal? "+" next-token)
-       (bin-op "+" (number->string curr-token) (nex-cddr tokens))
-       (number->string curr-token)))
+       (bin-op "+" curr-token (nex-cddr tokens))
+       curr-token))
+
+    ;;((string? current-token) 
+
+
     (#t "#PARSE")))
 
 
 
 (define (guile-parse str)
   (define tokens (pb-lexemes (bfp str)))
-  (define tree (string-append LRB "lambda () "))
-  (string-append tree (expr tokens) RRB))
+  (expr tokens))
 
 	
 
