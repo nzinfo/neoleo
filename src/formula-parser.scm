@@ -4,6 +4,7 @@
 (use-modules (ice-9 format))
 (use-modules (oop goops))
 (use-modules (ice-9 i18n))
+(use-modules (ice-9 match))
 
 (define LRB #\()
 (define RRB #\))
@@ -21,6 +22,14 @@
 (define (nex-caddr els) (no-except caddr els))
 (define (nex-cddr els) (no-except cddr els))
 
+
+#! operator precedence in accordance with java:
+https://introcs.cs.princeton.edu/java/11precedence/
+
+12 * / %
+11 + -
+9 < <= > >= <>
+!#
 
 #!
 
@@ -59,8 +68,11 @@ http://lists.gnu.org/archive/html/guile-user/2018-02/msg00006.html
 		 'eof
 		 (string-ref s 0)))
 
-(define (accept-lexeme pb)
-  (slot-set! pb 'accepted-lexemes (append (slot-ref pb 'accepted-lexemes) (list (slot-ref pb 'lexeme))))
+;(define-method (peek? (pb <parser-buffer>) (c <char>))
+;	       (equal? c 
+
+(define (accept-lexeme pb type)
+  (slot-set! pb 'accepted-lexemes (append (slot-ref pb 'accepted-lexemes) (list (list type (slot-ref pb 'lexeme)))))
   (slot-set! pb 'lexeme "")
   pb)
   
@@ -148,7 +160,7 @@ http://lists.gnu.org/archive/html/guile-user/2018-02/msg00006.html
   (take-char pb) ; the double-quote
   (snarfing pb not-dq?)
   (take-char pb) ; the end-quote
-  (accept-lexeme pb) 
+  (accept-lexeme pb 'double-quotes) 
   pb)
 
 (define-method (parse-string (str <string>))
@@ -156,50 +168,57 @@ http://lists.gnu.org/archive/html/guile-user/2018-02/msg00006.html
 
 (define (more? pb) (not (finished? pb)))
 
+(define (parse-<> pb) ; parse for <. <=, >, >=, <>
+  (take-char pb)
+  (when (memq (peek pb) '(#\= #\>))
+    (take-char pb))
+  (accept-lexeme pb 'bin-op-9))
+
 (define (try-numeric pb)
   (define-values (num nread)  (locale-string->inexact (pb-unprocessed pb)))
   (when (positive? nread)
     (pb-lexeme! pb num)
-    (accept-lexeme pb)
+    (accept-lexeme pb 'number)
     (eat-chars pb nread))
   (positive? nread))
 
 (define (parse-word-or-ref pb)
   (snarfing pb char-alphabetic?) ; TODO handle case of cell ref
-  (accept-lexeme pb))
+  (accept-lexeme pb 'chars))
 
-(define (accept-char pb)
+(define (accept-char-type pb type)
   (take-char pb)
-  (accept-lexeme pb))
+  (accept-lexeme pb type))
+
+(define (accept-char pb) (accept-char-type pb 'char))
 
 (define (get-lexeme pb)
   (define c0 (peek pb))
   (cond
-    ((memq c0 (list #\+ #\-)) (accept-char pb))
+    ((memq c0 (list #\+ #\-)) (accept-char-type pb 'bin-op-11))
+    ((memq c0 (list #\* #\/)) (accept-char-type pb 'bin-op-12))
+    ((memq c0 (list #\< #\>)) (parse-<> pb))
     ((try-numeric pb))
     ((eq? c0 #\") (parse-string pb))
     ((char-alphabetic? c0) (parse-word-or-ref pb))
     (#t (accept-char pb)))
   #t)
 
-;;; big flipping parser
-(define (bfp str)
+(define (tokenise str)
   (define pb (make-pb str))
   (while (more? (eat-white pb))
 	 (get-lexeme pb))
-  pb)
+  (pb-lexemes pb))
 
 
 
 
 (define (parse-test str) 
-  (define pb (bfp str))
-  ;;(write (slot-ref pb 'lexeme))
   (format #t "\nParsing ~s\n" str)
-  (format #t "Result: ~s\n" (describe-pb pb))
+  (format #t "Result: ~s\n" (tokenise str))
   (format #t "Finished parsing\n"))
 
-(define (run)
+(define (run1)
   (parse-test " \"hellow world\" \"another string\"")
   (parse-test " hellow ")
   (parse-test "2345 hello")
@@ -209,34 +228,50 @@ http://lists.gnu.org/archive/html/guile-user/2018-02/msg00006.html
 
 
 
-(define (expr tokens) 'defined-below)
+(define (expr-e tokens) 'defined-below)
 
 
-(define (bin-op op token rest)
-       (list op token  (expr rest)))
+;(define (bin-op op token rest)
+;       (list op token  (expr rest)))
 
-(define (expr tokens)
-  (define curr-token (nex-car tokens))
-  (define next-token (nex-cadr tokens))
-  (cond 
-    ((number? curr-token)
-     (if (equal? "+" next-token)
-       (bin-op "+" curr-token (nex-cddr tokens))
-       curr-token))
+(define (expr-p tokens)
+  (match tokens
+	 ((('number n)) (list 'expr-p n))
+	 ((('char "(") ('expr-e e) ('char ")")) (list 'expr-e e))))
 
-    ;;((string? current-token) 
+(define (expr-r tokens)
+  (match tokens
+	 (((t1 v1)) (list expr-r v1))
+	 (((t1 v1) ('bin-op-11 op) . rest) (list op v1 
+
+(define (expr-e tokens)
+  (match tokens
+	 (((t1 v1)) 
+	 (((t1 v1) ('bin-op-9 op) . rest) (list op v1 (expr-r rest)))))
 
 
-    (#t "#PARSE")))
+;(define (expr-e-XXX tokens)
+;  (define curr-token (nex-car tokens))
+;  (define next-token (nex-cadr tokens))
+;  (cond 
+;    ((number? curr-token)
+;     (if (equal? "+" next-token)
+;       (bin-op "+" curr-token (nex-cddr tokens))
+;       curr-token))
+;
+;    ;;((string? current-token) 
+;
+;
+;    (#t "#PARSE")))
+
 
 
 
 (define (guile-parse str)
-  (define tokens (pb-lexemes (bfp str)))
-  (expr tokens))
+  (expr-e (tokenise str))) 
 
 	
 
 
-(define (run1)
+(define (run2)
   (guile-parse "23+24"))
